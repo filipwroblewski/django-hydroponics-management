@@ -67,7 +67,11 @@ Once everything is set up, you can run the application with Docker using the fol
 
 2. Apply database migrations:
 
-   After the containers are up and running, apply the Django migrations to set up your database schema:
+   After the containers are up and running, create and apply the Django migrations to set up your database schema:
+
+   ```bash
+   docker-compose exec web python manage.py makemigrations
+   ```
 
    ```bash
    docker-compose exec web python manage.py migrate
