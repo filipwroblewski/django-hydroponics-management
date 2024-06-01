@@ -16,12 +16,16 @@ class HydroponicSystemViewSet(viewsets.ModelViewSet):
         return HydroponicSystem.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
-        check_owner_permission(self.request.user, serializer.owner)
         serializer.save(owner=self.request.user)
     
     def perform_destroy(self, instance):
         check_owner_permission(self.request.user, instance.owner)
         instance.delete()
+    
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        check_owner_permission(self.request.user, instance.owner)
+        serializer.save()
 
 class MeasurementViewSet(viewsets.ModelViewSet):
     queryset = Measurement.objects.all()
@@ -39,3 +43,8 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         check_owner_permission(self.request.user, instance.owner)
         instance.delete()
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        check_owner_permission(self.request.user, instance.system.owner)
+        serializer.save()
