@@ -13,8 +13,9 @@ class HydroponicSystemViewSet(viewsets.ModelViewSet):
     queryset = HydroponicSystem.objects.all()
     serializer_class = HydroponicSystemSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = HydroponicSystemFilter
+    search_fields = ['name', 'description']
 
     def get_queryset(self):
         return HydroponicSystem.objects.filter(owner=self.request.user)
