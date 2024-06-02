@@ -22,6 +22,7 @@ def validate_range(value, value_range):
     if not (min_value <= value <= max_value):
         raise ValidationError(f'Value {value} is out of the valid range (from {min_value} to {max_value}).')
 
+
 class HydroponicSystem(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hydroponic_systems')
     name = models.CharField(max_length=255)
@@ -31,7 +32,8 @@ class HydroponicSystem(models.Model):
 
     def __str__(self):
         return self.name
-
+      
+      
 class Measurement(models.Model):
     system = models.ForeignKey(HydroponicSystem, on_delete=models.CASCADE, related_name='measurements')
     ph = models.FloatField(validators=[validate_ph_range], null=True, blank=True)
