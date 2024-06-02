@@ -1,7 +1,7 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, filters
 from .models import HydroponicSystem, Measurement
 from .serializers import HydroponicSystemSerializer, MeasurementSerializer
-from .filters import HydroponicSystemFilter
+from .filters import HydroponicSystemFilter, MeasurementFilter
 from django.core.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -35,6 +35,9 @@ class MeasurementViewSet(viewsets.ModelViewSet):
     queryset = Measurement.objects.all()
     serializer_class = MeasurementSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_class = MeasurementFilter
+    ordering_fields = ['ph', 'temperature', 'tds', 'timestamp']
 
     def get_queryset(self):
         return Measurement.objects.filter(system__owner=self.request.user)
