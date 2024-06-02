@@ -1,7 +1,9 @@
 from rest_framework import viewsets, permissions
 from .models import HydroponicSystem, Measurement
 from .serializers import HydroponicSystemSerializer, MeasurementSerializer
+from .filters import HydroponicSystemFilter
 from django.core.exceptions import PermissionDenied
+from django_filters.rest_framework import DjangoFilterBackend
 
 def check_owner_permission(request_user, instance_owner):
     if request_user != instance_owner:
@@ -11,6 +13,8 @@ class HydroponicSystemViewSet(viewsets.ModelViewSet):
     queryset = HydroponicSystem.objects.all()
     serializer_class = HydroponicSystemSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = HydroponicSystemFilter
 
     def get_queryset(self):
         return HydroponicSystem.objects.filter(owner=self.request.user)
