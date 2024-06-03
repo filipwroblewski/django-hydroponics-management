@@ -193,3 +193,129 @@ class MeasurementDisplayTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
+class MeasurementPaginationTestCase(BaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
+        
+        # Create multiple measurements to test pagination
+        Measurement.objects.bulk_create([
+            Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
+            Measurement(system=cls.system, ph=7.0, temperature=26.0, tds=850),
+            Measurement(system=cls.system, ph=6.8, temperature=25.8, tds=820),
+            Measurement(system=cls.system, ph=7.2, temperature=26.2, tds=860),
+            Measurement(system=cls.system, ph=6.7, temperature=25.7, tds=810)
+        ])
+
+    def test_unauthenticated_request(self):
+        # Make an unauthenticated request
+        response = self.client.get('/api/measurements/?page_size=2')
+        
+        # Check if the request returns unauthorized status
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_pagination_with_page_size(self):
+        # Make an authenticated request with page_size=2
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?page_size=2')
+
+        # Check if the request was successful
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify pagination structure and content
+        data = response.json()
+        self.assertIn('count', data)
+        self.assertIn('next', data)
+        self.assertIn('previous', data)
+        self.assertIn('results', data)
+
+        # Check pagination count and results
+        self.assertEqual(data['count'], 5)
+        self.assertEqual(len(data['results']), 2)
+        self.assertIsNotNone(data['next'])
+        self.assertIsNone(data['previous'])
+
+        # Follow the next page link
+        next_page_url = data['next']
+        response = self.client.get(next_page_url)
+        data = response.json()
+
+        # Check the second page of results
+        self.assertEqual(len(data['results']), 2)
+        self.assertIsNotNone(data['next'])
+        self.assertIsNotNone(data['previous'])
+
+        # Follow the next page link again
+        next_page_url = data['next']
+        response = self.client.get(next_page_url)
+        data = response.json()
+
+        # Check the third and last page of results
+        self.assertEqual(len(data['results']), 1)
+        self.assertIsNone(data['next'])
+        self.assertIsNotNone(data['previous'])
+
+    def test_pagination_with_different_page_sizes(self):
+        # Test with page_size=3
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?page_size=3')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 5)
+        self.assertEqual(len(data['results']), 3)
+        self.assertIsNotNone(data['next'])
+        self.assertIsNone(data['previous'])
+
+        # Follow the next page link
+        next_page_url = data['next']
+        response = self.client.get(next_page_url)
+        data = response.json()
+
+        # Check the second page of results
+        self.assertEqual(len(data['results']), 2)
+        self.assertIsNone(data['next'])
+        self.assertIsNotNone(data['previous'])
+
+    def test_pagination_with_page_size_bigger_than_data(self):
+        # Test with page_size=10, which is larger than the number of measurements
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?page_size=10')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 5)
+        self.assertEqual(len(data['results']), 5)
+        self.assertIsNone(data['next'])
+        self.assertIsNone(data['previous'])
+
+    def test_pagination_with_no_additional_pages(self):
+        # Test with page_size=5, which exactly matches the number of measurements
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?page_size=5')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 5)
+        self.assertEqual(len(data['results']), 5)
+        self.assertIsNone(data['next'])
+        self.assertIsNone(data['previous'])
+
+    def test_direct_next_page_access(self):
+        # Make an authenticated request with page_size=2
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?page_size=2')
+
+        data = response.json()
+        next_page_url = data['next']
+
+        # Directly access the next page
+        response = self.client.get(next_page_url)
+        data = response.json()
+
+        # Check the results on the second page
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(data['results']), 2)
+        self.assertIsNotNone(data['next'])
+        self.assertIsNotNone(data['previous'])
