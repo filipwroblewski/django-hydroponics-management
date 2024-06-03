@@ -68,6 +68,9 @@ class MeasurementViewSet(BasePermissionViewSet):
         instance = self.get_object()
         check_owner_permission(self.request.user, instance.system.owner)
         serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.delete()
     
     @action(detail=False, methods=['get'], url_path='last-measurements')
     def last_measurements(self, request):
