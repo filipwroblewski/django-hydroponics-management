@@ -6,12 +6,28 @@ from .serializers import HydroponicSystemSerializer, MeasurementSerializer
 from .filters import HydroponicSystemFilter, MeasurementFilter
 from .utils import check_owner_permission
 from django_filters.rest_framework import DjangoFilterBackend
+from django.core.exceptions import ObjectDoesNotExist
 
 
-class HydroponicSystemViewSet(viewsets.ModelViewSet):
+class BasePermissionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    def perform_destroy(self, instance):
+        check_owner_permission(self.request.user, instance.owner)
+        instance.delete()
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        check_owner_permission(self.request.user, instance.owner)
+        serializer.save()
+
+
+class HydroponicSystemViewSet(BasePermissionViewSet):
     queryset = HydroponicSystem.objects.all()
     serializer_class = HydroponicSystemSerializer
-    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_class = HydroponicSystemFilter
     search_fields = ['name', 'description']
@@ -19,22 +35,10 @@ class HydroponicSystemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return HydroponicSystem.objects.filter(owner=self.request.user)
 
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
-    
-    def perform_destroy(self, instance):
-        check_owner_permission(self.request.user, instance.owner)
-        instance.delete()
-    
-    def perform_update(self, serializer):
-        instance = self.get_object()
-        check_owner_permission(self.request.user, instance.owner)
-        serializer.save()
 
-class MeasurementViewSet(viewsets.ModelViewSet):
+class MeasurementViewSet(BasePermissionViewSet):
     queryset = Measurement.objects.all()
     serializer_class = MeasurementSerializer
-    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_class = MeasurementFilter
     ordering_fields = ['ph', 'temperature', 'tds', 'timestamp']
@@ -43,13 +47,13 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         return Measurement.objects.filter(system__owner=self.request.user)
 
     def perform_create(self, serializer):
-        system = HydroponicSystem.objects.get(id=self.request.data['system'])
-        check_owner_permission(self.request.user, system.owner)
-        serializer.save()
+        try:
+            system = HydroponicSystem.objects.get(id=self.request.data['system'])
+            check_owner_permission(self.request.user, system.owner)
+            serializer.save()
+        except ObjectDoesNotExist:
+            return Response({"error": "Hydroponic system not found."}, status=status.HTTP_404_NOT_FOUND)
 
-    def perform_destroy(self, instance):
-        check_owner_permission(self.request.user, instance.owner)
-        instance.delete()
 
     def perform_update(self, serializer):
         instance = self.get_object()
@@ -66,10 +70,11 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         except ValueError:
             return Response({"error": "num_measurements must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
         
-        system = HydroponicSystem.objects.filter(name=system_name, owner=request.user).first()
-        if not system:
-            return Response({"error": "System not found or you do not have permission."}, status=status.HTTP_404_NOT_FOUND)
-        
-        measurements = Measurement.objects.filter(system=system).order_by('-timestamp')[:num_measurements]
-        serializer = MeasurementSerializer(measurements, many=True)
-        return Response(serializer.data)
+        try:
+            system = HydroponicSystem.objects.get(name=system_name, owner=request.user)
+            measurements = Measurement.objects.filter(system=system).order_by('-timestamp')[:num_measurements]
+            serializer = MeasurementSerializer(measurements, many=True)
+            return Response(serializer.data)
+        except ObjectDoesNotExist:
+            return Response({"error": "System not found or you do not have permission."},
+                            status=status.HTTP_404_NOT_FOUND)
