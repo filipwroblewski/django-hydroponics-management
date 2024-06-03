@@ -369,3 +369,43 @@ class MeasurementFilterByPHTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(data['count'], 0)
         self.assertEqual(len(data['results']), 0)
+
+
+class MeasurementFilterByTemperatureTestCase(BaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
+        
+        # Create multiple measurements to test filtering by temperature
+        Measurement.objects.bulk_create([
+            Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
+            Measurement(system=cls.system, ph=7.0, temperature=26.0, tds=850),
+            Measurement(system=cls.system, ph=6.8, temperature=25.8, tds=820),
+            Measurement(system=cls.system, ph=7.2, temperature=26.2, tds=860),
+            Measurement(system=cls.system, ph=6.7, temperature=25.7, tds=810)
+        ])
+
+    def test_filter_by_temperature_range(self):
+        # Test filtering with a valid temperature range
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?temperature_min=25.7&temperature_max=26.0')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 3)
+        self.assertEqual(len(data['results']), 3)
+
+        for result in data['results']:
+            self.assertGreaterEqual(result['temperature'], 25.7)
+            self.assertLessEqual(result['temperature'], 26.0)
+
+    def test_filter_by_temperature_no_results(self):
+        # Test filtering with a temperature range that results in no matches
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?temperature_min=30.0&temperature_max=35.0')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 0)
+        self.assertEqual(len(data['results']), 0)
