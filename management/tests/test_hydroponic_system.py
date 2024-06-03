@@ -193,3 +193,63 @@ class HydroponicSystemPartialUpdateTestCase(APITestCase):
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.data['detail'], 'Given token not valid for any token type')
+
+
+class HydroponicSystemListDisplayTestCase(APITestCase):
+
+    def generate_jwt_token(self, username, password):
+        url = '/api/token/'
+        response = self.client.post(url, {'username': username, 'password': password}, format='json')
+        if response.status_code == 200:
+            return response.json()['access']
+        return None
+
+    def setUp(self):
+        # Clear existing data
+        HydroponicSystem.objects.all().delete()
+        User.objects.all().delete()
+
+        # Create a test user
+        self.user = User.objects.create_user(username='test_user', password='test_password')
+
+        # Create some static hydroponic systems
+        for i in range(1, 6):
+            HydroponicSystem.objects.create(owner=self.user, name=f'System {i}', description=f'Description {i}')
+
+        # Generate JWT token for the user
+        self.access_token = self.generate_jwt_token('test_user', 'test_password')
+
+    def test_hydroponic_system_list_authenticated(self):
+        # Make an authenticated request to get the hydroponic systems list
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/hydroponic-systems/')
+        self.assertEqual(response.status_code, 200)
+
+        # Verify pagination structure and content
+        data = response.json()
+        self.assertIn('count', data)
+        self.assertIn('results', data)
+        self.assertEqual(data['count'], 5)
+        systems = data['results']
+        self.assertEqual(len(systems), 5)
+        for i, system in enumerate(systems, start=1):
+            self.assertEqual(system['name'], f'System {i}')
+            self.assertEqual(system['description'], f'Description {i}')
+            self.assertEqual(system['owner'], 'test_user')
+            
+            # Check if created_at and updated_at exist (auto-added fields)
+            self.assertIn('created_at', system)
+            self.assertIn('updated_at', system)
+
+    def test_hydroponic_system_list_unauthenticated(self):
+        # Make an unauthenticated request to get the hydroponic systems list
+        response = self.client.get('/api/hydroponic-systems/')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.data['detail'], 'Authentication credentials were not provided.')
+
+    def test_hydroponic_system_list_invalid_token(self):
+        # Make a request with an invalid token to get the hydroponic systems list
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
+        response = self.client.get('/api/hydroponic-systems/')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.data['detail'], 'Given token not valid for any token type')
