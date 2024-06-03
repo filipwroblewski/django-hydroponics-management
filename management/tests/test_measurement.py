@@ -476,3 +476,72 @@ class MeasurementFilterByTDSTestCase(BaseTestCase):
         self.assertEqual(data['count'], 0)
         self.assertEqual(len(data['results']), 0)
 
+
+class MeasurementLastMeasurementsTestCase(BaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
+        
+        # Create multiple measurements to test retrieving the last measurements
+        Measurement.objects.bulk_create([
+            Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
+            Measurement(system=cls.system, ph=7.0, temperature=26.0, tds=850),
+            Measurement(system=cls.system, ph=6.8, temperature=25.8, tds=820),
+            Measurement(system=cls.system, ph=7.2, temperature=26.2, tds=860),
+            Measurement(system=cls.system, ph=6.7, temperature=25.7, tds=810),
+            Measurement(system=cls.system, ph=7.1, temperature=26.1, tds=830),
+            Measurement(system=cls.system, ph=6.9, temperature=25.9, tds=805),
+            Measurement(system=cls.system, ph=7.3, temperature=26.3, tds=865),
+            Measurement(system=cls.system, ph=6.6, temperature=25.6, tds=815),
+            Measurement(system=cls.system, ph=7.4, temperature=26.4, tds=870),
+            Measurement(system=cls.system, ph=6.4, temperature=25.4, tds=795),
+            Measurement(system=cls.system, ph=7.5, temperature=26.5, tds=875)
+        ])
+
+    def test_last_measurements(self):
+        # Test retrieving the last 3 measurements
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/last-measurements/?system_name=Sys1&num_measurements=3')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(data), 3)
+
+        # Check that the measurements are the last 3 created
+        expected_measurements = [
+            {'ph': 7.5, 'temperature': 26.5, 'tds': 875},
+            {'ph': 6.4, 'temperature': 25.4, 'tds': 795},
+            {'ph': 7.4, 'temperature': 26.4, 'tds': 870}
+        ]
+        for i, result in enumerate(data):
+            self.assertEqual(result['ph'], expected_measurements[i]['ph'])
+            self.assertEqual(result['temperature'], expected_measurements[i]['temperature'])
+            self.assertEqual(result['tds'], expected_measurements[i]['tds'])
+
+    def test_last_10_measurements(self):
+        # Test retrieving the last 10 measurements
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/last-measurements/?system_name=Sys1&num_measurements=10')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(data), 10)
+
+        # Check that the measurements are the last 10 created
+        expected_measurements = [
+            {'ph': 7.5, 'temperature': 26.5, 'tds': 875},
+            {'ph': 6.4, 'temperature': 25.4, 'tds': 795},
+            {'ph': 7.4, 'temperature': 26.4, 'tds': 870},
+            {'ph': 6.6, 'temperature': 25.6, 'tds': 815},
+            {'ph': 7.3, 'temperature': 26.3, 'tds': 865},
+            {'ph': 6.9, 'temperature': 25.9, 'tds': 805},
+            {'ph': 7.1, 'temperature': 26.1, 'tds': 830},
+            {'ph': 6.7, 'temperature': 25.7, 'tds': 810},
+            {'ph': 7.2, 'temperature': 26.2, 'tds': 860},
+            {'ph': 6.8, 'temperature': 25.8, 'tds': 820}
+        ]
+        for i, result in enumerate(data):
+            self.assertEqual(result['ph'], expected_measurements[i]['ph'])
+            self.assertEqual(result['temperature'], expected_measurements[i]['temperature'])
+            self.assertEqual(result['tds'], expected_measurements[i]['tds'])
