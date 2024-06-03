@@ -319,3 +319,53 @@ class MeasurementPaginationTestCase(BaseTestCase):
         self.assertEqual(len(data['results']), 2)
         self.assertIsNotNone(data['next'])
         self.assertIsNotNone(data['previous'])
+
+
+class MeasurementFilterByPHTestCase(BaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
+        
+        # Create multiple measurements to test filtering by pH
+        Measurement.objects.bulk_create([
+            Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
+            Measurement(system=cls.system, ph=7.0, temperature=26.0, tds=850),
+            Measurement(system=cls.system, ph=6.8, temperature=25.8, tds=820),
+            Measurement(system=cls.system, ph=7.2, temperature=26.2, tds=860),
+            Measurement(system=cls.system, ph=6.7, temperature=25.7, tds=810)
+        ])
+
+    def test_filter_by_ph_range(self):
+        # Test filtering with a valid pH range
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?ph_min=6.7&ph_max=7.0')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 3)
+        self.assertEqual(len(data['results']), 3)
+
+        for result in data['results']:
+            self.assertGreaterEqual(result['ph'], 6.7)
+            self.assertLessEqual(result['ph'], 7.0)
+
+    def test_filter_by_ph_min_out_of_range(self):
+        # Test filtering with a pH min value lower than any possible pH
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?ph_min=1.0')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 5)
+        self.assertEqual(len(data['results']), 5)
+
+    def test_filter_by_ph_no_results(self):
+        # Test filtering with a pH range that results in no matches
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?ph_min=8.0&ph_max=9.0')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 0)
+        self.assertEqual(len(data['results']), 0)
