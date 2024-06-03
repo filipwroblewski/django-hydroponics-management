@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import HydroponicSystem, Measurement
@@ -64,11 +64,11 @@ class MeasurementViewSet(viewsets.ModelViewSet):
         try:
             num_measurements = int(num_measurements)
         except ValueError:
-            return Response({"error": "num_measurements must be an integer."}, status=400)
+            return Response({"error": "num_measurements must be an integer."}, status=status.HTTP_400_BAD_REQUEST)
         
         system = HydroponicSystem.objects.filter(name=system_name, owner=request.user).first()
         if not system:
-            return Response({"error": "System not found or you do not have permission."}, status=404)
+            return Response({"error": "System not found or you do not have permission."}, status=status.HTTP_404_NOT_FOUND)
         
         measurements = Measurement.objects.filter(system=system).order_by('-timestamp')[:num_measurements]
         serializer = MeasurementSerializer(measurements, many=True)
