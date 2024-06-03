@@ -38,3 +38,49 @@ class GenerateJWTTokenTestCase(APITestCase):
         tokens = generate_jwt_token(self.client, 'test_user', 'wrong_password')
         self.assertIsNone(tokens)
 
+
+class HydroponicSystemListTestCase(APITestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        # Create a test user
+        cls.user = User.objects.create_user(username='test_user', password='test_password')
+        
+        # Create some hydroponic systems for the user
+        HydroponicSystem.objects.create(owner=cls.user, name='System 1', description='Description 1')
+        HydroponicSystem.objects.create(owner=cls.user, name='System 2', description='Description 2')
+
+    def setUp(self):
+        # Generate JWT token for the user
+        self.tokens = generate_jwt_token(self.client, 'test_user', 'test_password')
+        self.access_token = self.tokens['access']
+
+    def test_hydroponic_system_list_authenticated(self):
+        """Test retrieving hydroponic systems list with authentication."""
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/hydroponic-systems/')
+        self.assertEqual(response.status_code, 200)
+
+        # Verify pagination structure and content
+        data = response.json()
+        self.assertIn('count', data)
+        self.assertIn('results', data)
+        self.assertEqual(data['count'], 2)
+        systems = data['results']
+        self.assertEqual(len(systems), 2)
+        self.assertEqual(systems[0]['name'], 'System 1')
+        self.assertEqual(systems[1]['name'], 'System 2')
+
+    def test_hydroponic_system_list_unauthenticated(self):
+        """Test retrieving hydroponic systems list without authentication."""
+        response = self.client.get('/api/hydroponic-systems/')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.data['detail'], 'Authentication credentials were not provided.')
+
+    def test_hydroponic_system_list_invalid_token(self):
+        """Test retrieving hydroponic systems list with an invalid token."""
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
+        response = self.client.get('/api/hydroponic-systems/')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.data['detail'], 'Given token not valid for any token type')
+
