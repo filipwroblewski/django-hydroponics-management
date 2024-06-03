@@ -3,8 +3,7 @@ from django.contrib.auth.models import User
 from ..models import HydroponicSystem
 from .utils import generate_jwt_token
 
-class HydroponicSystemCreateTestCase(APITestCase):
-
+class BaseTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username='test_user', password='test_password')
@@ -12,6 +11,9 @@ class HydroponicSystemCreateTestCase(APITestCase):
     def setUp(self):
         self.tokens = generate_jwt_token(self.client, 'test_user', 'test_password')
         self.access_token = self.tokens['access']
+
+
+class HydroponicSystemCreateTestCase(BaseTestCase):
 
     def test_create_hydroponic_system_authenticated(self):
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
@@ -41,16 +43,12 @@ class HydroponicSystemCreateTestCase(APITestCase):
         self.assertEqual(response.data['name'][0], 'This field may not be blank.')
 
 
-class HydroponicSystemDeleteTestCase(APITestCase):
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = User.objects.create_user(username='test_user', password='test_password')
-        cls.other_user = User.objects.create_user(username='other_user', password='other_password')
+class HydroponicSystemDeleteTestCase(BaseTestCase):
 
     def setUp(self):
-        self.tokens = generate_jwt_token(self.client, 'test_user', 'test_password')
-        self.access_token = self.tokens['access']
+        super().setUp()
+        self.other_user = User.objects.create_user(username='other_user', password='other_password')
+
         self.system1 = HydroponicSystem.objects.create(owner=self.user, name='System 1', description='Description 1')
         self.system2 = HydroponicSystem.objects.create(owner=self.other_user, name='System 2', description='Description 2')
 
@@ -72,29 +70,11 @@ class HydroponicSystemDeleteTestCase(APITestCase):
         self.assertTrue(HydroponicSystem.objects.filter(id=self.system2.id).exists())
 
 
-class HydroponicSystemUpdateTestCase(APITestCase):
-
-    def generate_jwt_token(self, username, password):
-        # Function to generate JWT token
-        url = '/api/token/'
-        response = self.client.post(url, {'username': username, 'password': password}, format='json')
-        if response.status_code == 200:
-            return response.json()['access']
-        return None
+class HydroponicSystemUpdateTestCase(BaseTestCase):
 
     def setUp(self):
-        # Clear existing data
-        HydroponicSystem.objects.all().delete()
-        User.objects.all().delete()
-
-        # Create a test user
-        self.user = User.objects.create_user(username='test_user', password='test_password')
-
-        # Create a hydroponic system for the user
+        super().setUp()
         self.system = HydroponicSystem.objects.create(owner=self.user, name='Test System', description='Test Description')
-
-        # Generate JWT token for the user
-        self.access_token = self.generate_jwt_token('test_user', 'test_password')
 
     def test_hydroponic_system_update_authenticated(self):
         # Make an authenticated request to update the hydroponic system
@@ -127,29 +107,11 @@ class HydroponicSystemUpdateTestCase(APITestCase):
         self.assertEqual(response.data['detail'], 'Given token not valid for any token type')
 
 
-class HydroponicSystemPartialUpdateTestCase(APITestCase):
-
-    def generate_jwt_token(self, username, password):
-        # Function to generate JWT token
-        url = '/api/token/'
-        response = self.client.post(url, {'username': username, 'password': password}, format='json')
-        if response.status_code == 200:
-            return response.json()['access']
-        return None
+class HydroponicSystemPartialUpdateTestCase(BaseTestCase):
 
     def setUp(self):
-        # Clear existing data
-        HydroponicSystem.objects.all().delete()
-        User.objects.all().delete()
-
-        # Create a test user
-        self.user = User.objects.create_user(username='test_user', password='test_password')
-
-        # Create a hydroponic system for the user
+        super().setUp()
         self.system = HydroponicSystem.objects.create(owner=self.user, name='Test System', description='Test Description')
-
-        # Generate JWT token for the user
-        self.access_token = self.generate_jwt_token('test_user', 'test_password')
 
     def test_hydroponic_system_partial_update_name_authenticated(self):
         # Make an authenticated request to update just the name of the hydroponic system
@@ -195,29 +157,12 @@ class HydroponicSystemPartialUpdateTestCase(APITestCase):
         self.assertEqual(response.data['detail'], 'Given token not valid for any token type')
 
 
-class HydroponicSystemListDisplayTestCase(APITestCase):
-
-    def generate_jwt_token(self, username, password):
-        url = '/api/token/'
-        response = self.client.post(url, {'username': username, 'password': password}, format='json')
-        if response.status_code == 200:
-            return response.json()['access']
-        return None
+class HydroponicSystemListDisplayTestCase(BaseTestCase):
 
     def setUp(self):
-        # Clear existing data
-        HydroponicSystem.objects.all().delete()
-        User.objects.all().delete()
-
-        # Create a test user
-        self.user = User.objects.create_user(username='test_user', password='test_password')
-
+        super().setUp()
         # Create some static hydroponic systems
-        for i in range(1, 6):
-            HydroponicSystem.objects.create(owner=self.user, name=f'System {i}', description=f'Description {i}')
-
-        # Generate JWT token for the user
-        self.access_token = self.generate_jwt_token('test_user', 'test_password')
+        [HydroponicSystem.objects.create(owner=self.user, name=f'System {_}', description=f'Description {_}') for _ in range(1, 6)]
 
     def test_hydroponic_system_list_authenticated(self):
         # Make an authenticated request to get the hydroponic systems list
@@ -236,7 +181,7 @@ class HydroponicSystemListDisplayTestCase(APITestCase):
             self.assertEqual(system['name'], f'System {i}')
             self.assertEqual(system['description'], f'Description {i}')
             self.assertEqual(system['owner'], 'test_user')
-            
+
             # Check if created_at and updated_at exist (auto-added fields)
             self.assertIn('created_at', system)
             self.assertIn('updated_at', system)
