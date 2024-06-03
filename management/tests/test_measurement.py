@@ -409,3 +409,70 @@ class MeasurementFilterByTemperatureTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(data['count'], 0)
         self.assertEqual(len(data['results']), 0)
+
+
+class MeasurementFilterByTDSTestCase(BaseTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
+        
+        # Create multiple measurements to test filtering by TDS
+        Measurement.objects.bulk_create([
+            Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
+            Measurement(system=cls.system, ph=7.0, temperature=26.0, tds=850),
+            Measurement(system=cls.system, ph=6.8, temperature=25.8, tds=820),
+            Measurement(system=cls.system, ph=7.2, temperature=26.2, tds=860),
+            Measurement(system=cls.system, ph=6.7, temperature=25.7, tds=810)
+        ])
+
+    def test_filter_by_tds_range(self):
+        # Test filtering with a valid TDS range
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?tds_min=810&tds_max=850')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 3)
+        self.assertEqual(len(data['results']), 3)
+
+        for result in data['results']:
+            self.assertGreaterEqual(result['tds'], 810)
+            self.assertLessEqual(result['tds'], 850)
+
+    def test_filter_by_tds_min_only(self):
+        # Test filtering with only a TDS min value
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?tds_min=820')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 3)
+        self.assertEqual(len(data['results']), 3)
+
+        for result in data['results']:
+            self.assertGreaterEqual(result['tds'], 820)
+
+    def test_filter_by_tds_max_only(self):
+        # Test filtering with only a TDS max value
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?tds_max=810')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 2)
+        self.assertEqual(len(data['results']), 2)
+
+        for result in data['results']:
+            self.assertLessEqual(result['tds'], 810)
+
+    def test_filter_by_tds_no_results(self):
+        # Test filtering with a TDS range that results in no matches
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get('/api/measurements/?tds_min=900&tds_max=1000')
+
+        data = response.json()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['count'], 0)
+        self.assertEqual(len(data['results']), 0)
+
