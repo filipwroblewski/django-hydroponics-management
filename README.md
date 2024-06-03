@@ -92,6 +92,18 @@ Once everything is set up, you can run the application with Docker using the fol
    | Access application            | [http://localhost:8000](http://localhost:8000)             |
    | Access Django admin interface | [http://localhost:8000/admin](http://localhost:8000/admin) |
 
+# API Usage
+
+Hydroponics Management API allows you to interact with hydroponic systems and measurements. To explore and test the API endpoints, you can use [Api documentation](http://127.0.0.1:8000/api-docs/) interface using Swagger.
+
+You can access the Swagger UI at http://127.0.0.1:8000/api-docs/. This interface provides information about each API endpoint, including the available methods, parameters, and expected responses. You can also use it to execute API requests directly from your browser, making it easier to understand how to interact with the API effectively.
+
+To get started with the API:
+
+1. Ensure your server is running.
+2. Navigate to [http://127.0.0.1:8000/api-docs/](http://127.0.0.1:8000/api-docs/).
+3. Use the interactive documentation to explore the available endpoints and try out API requests.
+
 # Stopping the Application
 
 To stop the application, run:
