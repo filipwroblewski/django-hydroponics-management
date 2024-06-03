@@ -4,13 +4,10 @@ from rest_framework.response import Response
 from .models import HydroponicSystem, Measurement
 from .serializers import HydroponicSystemSerializer, MeasurementSerializer
 from .filters import HydroponicSystemFilter, MeasurementFilter
-from django.core.exceptions import PermissionDenied
+from .utils import check_owner_permission
 from django_filters.rest_framework import DjangoFilterBackend
 
-def check_owner_permission(request_user, instance_owner):
-    if request_user != instance_owner:
-        raise PermissionDenied("You do not have permission for this action.")
-    
+
 class HydroponicSystemViewSet(viewsets.ModelViewSet):
     queryset = HydroponicSystem.objects.all()
     serializer_class = HydroponicSystemSerializer
