@@ -8,8 +8,13 @@ from .utils import check_owner_permission
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.exceptions import ObjectDoesNotExist
 
+class PaginationMixin:
+    def paginate_queryset(self, queryset):
+        queryset = queryset.order_by('id')
+        return super().paginate_queryset(queryset)
+    
 
-class BasePermissionViewSet(viewsets.ModelViewSet):
+class BasePermissionViewSet(PaginationMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
@@ -34,6 +39,10 @@ class HydroponicSystemViewSet(BasePermissionViewSet):
 
     def get_queryset(self):
         return HydroponicSystem.objects.filter(owner=self.request.user)
+    
+    def paginate_queryset(self, queryset):
+        queryset = queryset.order_by('name')
+        return super().paginate_queryset(queryset)
 
 
 class MeasurementViewSet(BasePermissionViewSet):
