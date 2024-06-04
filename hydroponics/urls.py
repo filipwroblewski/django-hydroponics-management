@@ -28,7 +28,8 @@ schema_view = get_schema_view(
         title="Hydroponics Management API",
         default_version='v1',
         description="API documentation for the Hydroponics Management project",
-        terms_of_service="https://github.com/filipwroblewski/django-hydroponics-management/blob/main/LICENSE",
+        terms_of_service=("https://github.com/filipwroblewski/"
+                          "django-hydroponics-management/blob/main/LICENSE"),
         contact=openapi.Contact(email=""),
         license=openapi.License(name="MIT License"),
     ),
@@ -38,7 +39,14 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('management.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    re_path(r'^api-docs/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('api/token/', TokenObtainPairView.as_view(),
+         name='token_obtain_pair'),
+    path('api/token/refresh/',
+         TokenRefreshView.as_view(),
+         name='token_refresh'),
+    re_path(r'^api-docs/$',
+            schema_view.with_ui(
+                'swagger',
+                cache_timeout=0),
+            name='schema-swagger-ui'),
 ]

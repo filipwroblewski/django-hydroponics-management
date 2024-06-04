@@ -4,13 +4,16 @@ from django.contrib.auth.models import User
 from ..models import HydroponicSystem, Measurement
 from .utils import generate_jwt_token
 
+
 class BaseTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user(username='test_user', password='test_password')
+        cls.user = User.objects.create_user(
+            username='test_user', password='test_password')
 
     def setUp(self):
-        self.tokens = generate_jwt_token(self.client, 'test_user', 'test_password')
+        self.tokens = generate_jwt_token(
+            self.client, 'test_user', 'test_password')
         self.access_token = self.tokens['access']
 
 
@@ -18,57 +21,98 @@ class MeasurementCreateTestCase(BaseTestCase):
 
     def test_create_measurement_authenticated(self):
         # Make an authenticated request to create a measurement
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        system = HydroponicSystem.objects.create(owner=self.user, name='Test System', description='Test Description')
-        data = {'system': system.id, 'ph': 6.5, 'temperature': 25.5, 'tds': 800}
-        response = self.client.post('/api/measurements/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        system = HydroponicSystem.objects.create(
+            owner=self.user, name='Test System',
+            description='Test Description')
+        data = {
+            'system': system.id,
+            'ph': 6.5,
+            'temperature': 25.5,
+            'tds': 800}
+        response = self.client.post(
+            '/api/measurements/', data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_201_CREATED)
 
     def test_create_measurement_unauthenticated(self):
         # Make an unauthenticated request to create a measurement
-        system = HydroponicSystem.objects.create(owner=self.user, name='Test System', description='Test Description')
-        data = {'system': system.id, 'ph': 6.5, 'temperature': 25.5, 'tds': 800}
-        response = self.client.post('/api/measurements/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(response.data['detail'], 'Authentication credentials were not provided.')
+        system = HydroponicSystem.objects.create(
+            owner=self.user, name='Test System',
+            description='Test Description')
+        data = {'system': system.id,
+                'ph': 6.5,
+                'temperature': 25.5,
+                'tds': 800}
+        response = self.client.post(
+            '/api/measurements/', data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.data['detail'],
+            'Authentication credentials were not provided.')
 
     def test_create_measurement_invalid_token(self):
         # Make a request with an invalid token to create a measurement
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
-        system = HydroponicSystem.objects.create(owner=self.user, name='Test System', description='Test Description')
-        data = {'system': system.id, 'ph': 6.5, 'temperature': 25.5, 'tds': 800}
-        response = self.client.post('/api/measurements/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(response.data['detail'], 'Given token not valid for any token type')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
+        system = HydroponicSystem.objects.create(
+            owner=self.user, name='Test System',
+            description='Test Description')
+        data = {
+            'system': system.id,
+            'ph': 6.5,
+            'temperature': 25.5,
+            'tds': 800}
+        response = self.client.post(
+            '/api/measurements/', data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.data['detail'],
+            'Given token not valid for any token type')
 
 
 class MeasurementDeleteTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         # Create a HydroponicSystem instance
-        self.system = HydroponicSystem.objects.create(owner=self.user, name='Test System', description='Test Description')
+        self.system = HydroponicSystem.objects.create(
+            owner=self.user, name='Test System',
+            description='Test Description')
         # Create a Measurement instance associated with the system
-        self.measurement = Measurement.objects.create(system=self.system, ph=7.0, temperature=25.0, tds=800)
+        self.measurement = Measurement.objects.create(
+            system=self.system, ph=7.0, temperature=25.0, tds=800)
 
     def test_delete_measurement_authenticated(self):
         # Make an authenticated request to delete a measurement
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.delete(f'/api/measurements/{self.measurement.id}/')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.delete(
+            f'/api/measurements/{self.measurement.id}/')
+        self.assertEqual(
+            response.status_code, status.HTTP_204_NO_CONTENT)
         # Check if the measurement has been deleted from the database
-        self.assertFalse(Measurement.objects.filter(id=self.measurement.id).exists())
+        self.assertFalse(
+            Measurement.objects.filter(
+                id=self.measurement.id).exists())
 
     def test_delete_measurement_unauthenticated(self):
         # Make an unauthenticated request to delete a measurement
-        response = self.client.delete(f'/api/measurements/{self.measurement.id}/')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.client.delete(
+            f'/api/measurements/{self.measurement.id}/')
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_delete_measurement_invalid_token(self):
         # Make a request with an invalid token to delete a measurement
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
-        response = self.client.delete(f'/api/measurements/{self.measurement.id}/')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
+        response = self.client.delete(
+            f'/api/measurements/{self.measurement.id}/')
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class MeasurementUpdateTestCase(BaseTestCase):
@@ -76,34 +120,65 @@ class MeasurementUpdateTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         # Create a HydroponicSystem instance
-        self.system = HydroponicSystem.objects.create(owner=self.user, name='Test System', description='Test Description')
+        self.system = HydroponicSystem.objects.create(
+            owner=self.user, name='Test System',
+            description='Test Description')
         # Create a Measurement instance associated with the system
-        self.measurement = Measurement.objects.create(system=self.system, ph=7.0, temperature=25.0, tds=800)
+        self.measurement = Measurement.objects.create(
+            system=self.system,
+            ph=7.0,
+            temperature=25.0,
+            tds=800)
 
     def test_update_measurement_authenticated(self):
-        # Make an authenticated request to update a measurement
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        new_data = {'system': self.system.id, 'ph': 6.8, 'temperature': 26.0, 'tds': 900}
-        response = self.client.put(f'/api/measurements/{self.measurement.id}/', new_data, format='json')
+        # Make an authenticated request
+        # to update a measurement
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        new_data = {
+            'system': self.system.id,
+            'ph': 6.8,
+            'temperature': 26.0,
+            'tds': 900}
+        response = self.client.put(
+            f'/api/measurements/{self.measurement.id}/',
+            new_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Check if the measurement has been updated in the database
-        updated_measurement = Measurement.objects.get(id=self.measurement.id)
+        updated_measurement = Measurement.objects.get(
+            id=self.measurement.id)
         self.assertEqual(updated_measurement.ph, 6.8)
         self.assertEqual(updated_measurement.temperature, 26.0)
         self.assertEqual(updated_measurement.tds, 900)
 
     def test_update_measurement_unauthenticated(self):
         # Make an unauthenticated request to update a measurement
-        new_data = {'system': self.system.id, 'ph': 6.8, 'temperature': 26.0, 'tds': 900}
-        response = self.client.put(f'/api/measurements/{self.measurement.id}/', new_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        new_data = {
+            'system': self.system.id,
+            'ph': 6.8,
+            'temperature': 26.0,
+            'tds': 900}
+        response = self.client.put(
+            f'/api/measurements/{self.measurement.id}/',
+            new_data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_update_measurement_invalid_token(self):
-        # Make a request with an invalid token to update a measurement
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
-        new_data = {'system': self.system.id, 'ph': 6.8, 'temperature': 26.0, 'tds': 900}
-        response = self.client.put(f'/api/measurements/{self.measurement.id}/', new_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        # Make a request with an invalid token
+        # to update a measurement
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
+        new_data = {
+            'system': self.system.id,
+            'ph': 6.8,
+            'temperature': 26.0,
+            'tds': 900}
+        response = self.client.put(
+            f'/api/measurements/{self.measurement.id}/',
+            new_data, format='json')
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class MeasurementPartialUpdateTestCase(BaseTestCase):
@@ -111,15 +186,20 @@ class MeasurementPartialUpdateTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         # Create a HydroponicSystem instance
-        self.system = HydroponicSystem.objects.create(owner=self.user, name='Test System', description='Test Description')
+        self.system = HydroponicSystem.objects.create(
+            owner=self.user, name='Test System',
+            description='Test Description')
         # Create a Measurement instance associated with the system
-        self.measurement = Measurement.objects.create(system=self.system, ph=7.0, temperature=25.0, tds=800)
+        self.measurement = Measurement.objects.create(
+            system=self.system, ph=7.0, temperature=25.0, tds=800)
 
     def test_measurement_partial_update_authenticated(self):
-        # Make an authenticated request to partially update a measurement
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        # Make an authenticated request
+        # to partially update a measurement
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
         url = f'/api/measurements/{self.measurement.id}/'
-        data = {'temperature': 26.0} 
+        data = {'temperature': 26.0}
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Check if the measurement has been partially updated
@@ -131,15 +211,19 @@ class MeasurementPartialUpdateTestCase(BaseTestCase):
         url = f'/api/measurements/{self.measurement.id}/'
         data = {'temperature': 26.0}
         response = self.client.patch(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_measurement_partial_update_invalid_token(self):
-        # Make a request with an invalid token to partially update a measurement
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
+        # Make a request with an invalid token
+        # to partially update a measurement
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
         url = f'/api/measurements/{self.measurement.id}/'
         data = {'temperature': 26.0}
         response = self.client.patch(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class MeasurementDisplayTestCase(BaseTestCase):
@@ -147,7 +231,10 @@ class MeasurementDisplayTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         # Create some static hydroponic systems
-        systems = [HydroponicSystem.objects.create(owner=self.user, name=f'System {_}', description=f'Description {_}') for _ in range(1, 6)]
+        systems = [
+            HydroponicSystem.objects.create(
+                owner=self.user, name=f'System {_}',
+                description=f'Description {_}') for _ in range(1, 6)]
         # Create some static measurements associated with each system
         for system in systems:
             measurements_data = [
@@ -157,21 +244,22 @@ class MeasurementDisplayTestCase(BaseTestCase):
             for data in measurements_data:
                 Measurement.objects.create(**data)
 
-
     def test_measurement_list_authenticated(self):
-        # Make an authenticated request to get the list of measurements
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        # Make an authenticated request
+        # to get the list of measurements
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
         response = self.client.get('/api/measurements/')
-        
+
         # Check if the request was successful
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         # Check if the response data contains the expected measurements
         data = response.json()
         self.assertEqual(data['count'], 10)
         self.assertIsNone(data['next'])
         self.assertIsNone(data['previous'])
-        
+
         # Check each measurement in the results array
         for measurement_data in data['results']:
             self.assertIn('id', measurement_data)
@@ -184,21 +272,25 @@ class MeasurementDisplayTestCase(BaseTestCase):
     def test_measurement_list_unauthenticated(self):
         # Make an unauthenticated request to get the list of measurements
         response = self.client.get('/api/measurements/')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_measurement_list_invalid_token(self):
         # Make a request with an invalid token to get the list of measurements
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + 'invalid_token')
         response = self.client.get('/api/measurements/')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class MeasurementPaginationTestCase(BaseTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
-        
+        cls.system = HydroponicSystem.objects.create(
+            owner=cls.user, name='Sys1', description='System 1')
+
         # Create multiple measurements to test pagination
         Measurement.objects.bulk_create([
             Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
@@ -211,14 +303,16 @@ class MeasurementPaginationTestCase(BaseTestCase):
     def test_unauthenticated_request(self):
         # Make an unauthenticated request
         response = self.client.get('/api/measurements/?page_size=2')
-        
+
         # Check if the request returns unauthorized status
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_pagination_with_page_size(self):
         # Make an authenticated request with page_size=2
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?page_size=2')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?page_size=2')
 
         # Check if the request was successful
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -258,8 +352,10 @@ class MeasurementPaginationTestCase(BaseTestCase):
 
     def test_pagination_with_different_page_sizes(self):
         # Test with page_size=3
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?page_size=3')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?page_size=3')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -279,9 +375,12 @@ class MeasurementPaginationTestCase(BaseTestCase):
         self.assertIsNotNone(data['previous'])
 
     def test_pagination_with_page_size_bigger_than_data(self):
-        # Test with page_size=10, which is larger than the number of measurements
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?page_size=10')
+        # Test with page_size=10,
+        # which is larger than the number of measurements
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?page_size=10')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -291,9 +390,12 @@ class MeasurementPaginationTestCase(BaseTestCase):
         self.assertIsNone(data['previous'])
 
     def test_pagination_with_no_additional_pages(self):
-        # Test with page_size=5, which exactly matches the number of measurements
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?page_size=5')
+        # Test with page_size=5,
+        # which exactly matches the number of measurements
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?page_size=5')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -304,8 +406,10 @@ class MeasurementPaginationTestCase(BaseTestCase):
 
     def test_direct_next_page_access(self):
         # Make an authenticated request with page_size=2
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?page_size=2')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?page_size=2')
 
         data = response.json()
         next_page_url = data['next']
@@ -325,8 +429,9 @@ class MeasurementFilterByPHTestCase(BaseTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
-        
+        cls.system = HydroponicSystem.objects.create(
+            owner=cls.user, name='Sys1', description='System 1')
+
         # Create multiple measurements to test filtering by pH
         Measurement.objects.bulk_create([
             Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
@@ -338,8 +443,10 @@ class MeasurementFilterByPHTestCase(BaseTestCase):
 
     def test_filter_by_ph_range(self):
         # Test filtering with a valid pH range
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?ph_min=6.7&ph_max=7.0')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?ph_min=6.7&ph_max=7.0')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -352,8 +459,10 @@ class MeasurementFilterByPHTestCase(BaseTestCase):
 
     def test_filter_by_ph_min_out_of_range(self):
         # Test filtering with a pH min value lower than any possible pH
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?ph_min=1.0')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?ph_min=1.0')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -362,8 +471,10 @@ class MeasurementFilterByPHTestCase(BaseTestCase):
 
     def test_filter_by_ph_no_results(self):
         # Test filtering with a pH range that results in no matches
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?ph_min=8.0&ph_max=9.0')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?ph_min=8.0&ph_max=9.0')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -375,8 +486,9 @@ class MeasurementFilterByTemperatureTestCase(BaseTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
-        
+        cls.system = HydroponicSystem.objects.create(
+            owner=cls.user, name='Sys1', description='System 1')
+
         # Create multiple measurements to test filtering by temperature
         Measurement.objects.bulk_create([
             Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
@@ -388,8 +500,10 @@ class MeasurementFilterByTemperatureTestCase(BaseTestCase):
 
     def test_filter_by_temperature_range(self):
         # Test filtering with a valid temperature range
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?temperature_min=25.7&temperature_max=26.0')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?temperature_min=25.7&temperature_max=26.0')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -402,8 +516,10 @@ class MeasurementFilterByTemperatureTestCase(BaseTestCase):
 
     def test_filter_by_temperature_no_results(self):
         # Test filtering with a temperature range that results in no matches
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?temperature_min=30.0&temperature_max=35.0')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?temperature_min=30.0&temperature_max=35.0')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -415,8 +531,9 @@ class MeasurementFilterByTDSTestCase(BaseTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
-        
+        cls.system = HydroponicSystem.objects.create(
+            owner=cls.user, name='Sys1', description='System 1')
+
         # Create multiple measurements to test filtering by TDS
         Measurement.objects.bulk_create([
             Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
@@ -428,8 +545,10 @@ class MeasurementFilterByTDSTestCase(BaseTestCase):
 
     def test_filter_by_tds_range(self):
         # Test filtering with a valid TDS range
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?tds_min=810&tds_max=850')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?tds_min=810&tds_max=850')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -442,7 +561,8 @@ class MeasurementFilterByTDSTestCase(BaseTestCase):
 
     def test_filter_by_tds_min_only(self):
         # Test filtering with only a TDS min value
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
         response = self.client.get('/api/measurements/?tds_min=820')
 
         data = response.json()
@@ -455,7 +575,8 @@ class MeasurementFilterByTDSTestCase(BaseTestCase):
 
     def test_filter_by_tds_max_only(self):
         # Test filtering with only a TDS max value
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
         response = self.client.get('/api/measurements/?tds_max=810')
 
         data = response.json()
@@ -468,8 +589,10 @@ class MeasurementFilterByTDSTestCase(BaseTestCase):
 
     def test_filter_by_tds_no_results(self):
         # Test filtering with a TDS range that results in no matches
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/?tds_min=900&tds_max=1000')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            '/api/measurements/?tds_min=900&tds_max=1000')
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -481,8 +604,9 @@ class MeasurementLastMeasurementsTestCase(BaseTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.system = HydroponicSystem.objects.create(owner=cls.user, name='Sys1', description='System 1')
-        
+        cls.system = HydroponicSystem.objects.create(
+            owner=cls.user, name='Sys1', description='System 1')
+
         # Create multiple measurements to test retrieving the last measurements
         Measurement.objects.bulk_create([
             Measurement(system=cls.system, ph=6.5, temperature=25.5, tds=800),
@@ -501,8 +625,11 @@ class MeasurementLastMeasurementsTestCase(BaseTestCase):
 
     def test_last_measurements(self):
         # Test retrieving the last 3 measurements
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/last-measurements/?system_name=Sys1&num_measurements=3')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            ('/api/measurements/last-measurements/'
+             '?system_name=Sys1&num_measurements=3'))
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -515,14 +642,23 @@ class MeasurementLastMeasurementsTestCase(BaseTestCase):
             {'ph': 7.4, 'temperature': 26.4, 'tds': 870}
         ]
         for i, result in enumerate(data):
-            self.assertEqual(result['ph'], expected_measurements[i]['ph'])
-            self.assertEqual(result['temperature'], expected_measurements[i]['temperature'])
-            self.assertEqual(result['tds'], expected_measurements[i]['tds'])
+            self.assertEqual(
+                result['ph'],
+                expected_measurements[i]['ph'])
+            self.assertEqual(
+                result['temperature'],
+                expected_measurements[i]['temperature'])
+            self.assertEqual(
+                result['tds'],
+                expected_measurements[i]['tds'])
 
     def test_last_10_measurements(self):
         # Test retrieving the last 10 measurements
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.access_token)
-        response = self.client.get('/api/measurements/last-measurements/?system_name=Sys1&num_measurements=10')
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.access_token)
+        response = self.client.get(
+            ('/api/measurements/last-measurements/'
+             '?system_name=Sys1&num_measurements=10'))
 
         data = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -543,5 +679,7 @@ class MeasurementLastMeasurementsTestCase(BaseTestCase):
         ]
         for i, result in enumerate(data):
             self.assertEqual(result['ph'], expected_measurements[i]['ph'])
-            self.assertEqual(result['temperature'], expected_measurements[i]['temperature'])
+            self.assertEqual(
+                result['temperature'],
+                expected_measurements[i]['temperature'])
             self.assertEqual(result['tds'], expected_measurements[i]['tds'])

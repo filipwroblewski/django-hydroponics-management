@@ -1,0 +1,15 @@
+[+] Running 3/3
+ - Network django-hydroponics-management_default  Created                             0.8s  
+ - Container django-hydroponics-management-db-1   Created                             0.2s  
+ - Container django-hydroponics-management-web-1  Created                             0.1s 
+Attaching to django-hydroponics-management-db-1, django-hydroponics-management-web-1
+django-hydroponics-management-db-1   |
+django-hydroponics-management-db-1   | PostgreSQL Database directory appears to contain a database; Skipping initialization
+django-hydroponics-management-db-1   |
+django-hydroponics-management-db-1   | 2024-06-04 20:12:33.184 UTC [1] LOG:  starting PostgreSQL 13.15 (Debian 13.15-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+django-hydroponics-management-db-1   | 2024-06-04 20:12:33.184 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+django-hydroponics-management-db-1   | 2024-06-04 20:12:33.184 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+django-hydroponics-management-db-1   | 2024-06-04 20:12:33.206 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+django-hydroponics-management-db-1   | 2024-06-04 20:12:33.229 UTC [27] LOG:  database system was shut down at 2024-06-04 20:02:15 UTC
+django-hydroponics-management-db-1   | 2024-06-04 20:12:33.245 UTC [1] LOG:  database system is ready to accept connections
+django-hydroponics-management-web-1  | Watching for file changes with StatReloader
