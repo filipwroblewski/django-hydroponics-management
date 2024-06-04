@@ -65,17 +65,39 @@ Once everything is set up, you can run the application with Docker using the fol
    - Build the Docker images as specified in the Dockerfile.
    - Start the services defined in docker-compose.yml.
 
+   Example [output](./README-files/docker-compose_up_--build.txt)
+
+   If you **have not built yet**, use `docker-compose up --build`. If you **have already built**, use `docker-compose up`.
+
+   ```bash
+   docker-compose up --build
+   ```
+
+   Example [output](./README-files/docker-compose_up.txt)
+
 2. Apply database migrations:
 
    After the containers are up and running, create and apply the Django migrations to set up your database schema:
 
-   ```bash
-   docker-compose exec web python manage.py makemigrations
-   ```
+   1. Make Migrations
 
-   ```bash
-   docker-compose exec web python manage.py migrate
-   ```
+      ```bash
+      docker-compose exec web python manage.py makemigrations
+      ```
+
+      Example output:
+
+      ```bash
+      No changes detected
+      ```
+
+   2. Migrate
+
+      ```bash
+      docker-compose exec web python manage.py migrate
+      ```
+
+      Example [output](./README-files/docker-compose_exec_web_python_managepy_migrate.txt)
 
 3. Create a superuser:
 
@@ -84,6 +106,8 @@ Once everything is set up, you can run the application with Docker using the fol
    ```bash
    docker-compose exec web python manage.py createsuperuser
    ```
+
+   Example [output](./README-files/docker-compose_exec_web_python_managepy_createsuperuser.txt)
 
 4. Access application:
 
@@ -96,7 +120,7 @@ Once everything is set up, you can run the application with Docker using the fol
 
 Hydroponics Management API allows you to interact with hydroponic systems and measurements. To explore and test the API endpoints, you can use [Api documentation](http://127.0.0.1:8000/api-docs/) interface using Swagger.
 
-You can access the Swagger UI at http://127.0.0.1:8000/api-docs/. This interface provides information about each API endpoint, including the available methods, parameters, and expected responses. You can also use it to execute API requests directly from your browser, making it easier to understand how to interact with the API effectively.
+You can access the Swagger UI at [http://127.0.0.1:8000/api-docs/](http://127.0.0.1:8000/api-docs/). This interface provides information about each API endpoint, including the available methods, parameters, and expected responses. You can also use it to execute API requests directly from your browser, making it easier to understand how to interact with the API effectively.
 
 To get started with the API:
 
@@ -104,13 +128,61 @@ To get started with the API:
 2. Navigate to [http://127.0.0.1:8000/api-docs/](http://127.0.0.1:8000/api-docs/).
 3. Use the interactive documentation to explore the available endpoints and try out API requests.
 
+[!API Docs Image](./README-files/api-docs.png)
+
+# Testing
+
+To test API you can run:
+
+```bash
+docker-compose exec web python manage.py test
+```
+
+Example output:
+
+```
+Found 52 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+....................................................
+----------------------------------------------------------------------
+Ran 52 tests in 33.261s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+You can find tests [here](./management/tests/)
+
 # Stopping the Application
 
 To stop the application, run:
 
-```bash
-docker-compose down
-```
+1. Press `ctrl + C`
+
+   Example output:
+
+   ```bash
+   Gracefully stopping... (press Ctrl+C again to force)
+   [+] Running 2/2
+   - Container django-hydroponics-management-web-1  Stopped                             0.8s
+   - Container django-hydroponics-management-db-1   Stopped                             0.7s canceled
+   ```
+
+2. Remove containers:
+
+   ```bash
+   docker-compose down
+   ```
+
+   Example output:
+
+   ```bash
+   [+] Running 3/3
+   - Container django-hydroponics-management-web-1  Removed                             0.0s
+   - Container django-hydroponics-management-db-1   Removed                             0.0s
+   - Network django-hydroponics-management_default  Removed                             0.8s
+   ```
 
 This command will stop and remove the containers, but the data in the PostgreSQL volume will be preserved.
 
