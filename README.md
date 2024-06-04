@@ -128,7 +128,7 @@ To get started with the API:
 2. Navigate to [http://127.0.0.1:8000/api-docs/](http://127.0.0.1:8000/api-docs/).
 3. Use the interactive documentation to explore the available endpoints and try out API requests.
 
-[!API Docs Image](./README-files/api-docs.png)
+![API Docs Image](./README-files/api-docs.png)
 
 # Testing
 
