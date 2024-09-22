@@ -6,6 +6,8 @@
 
 Django Hydroponics Management is a web application built with Django and Django REST Framework that allows users to manage hydroponic systems and sensor data. It provides endpoints for CRUD operations on hydroponic systems and sensor measurements, user authentication, and more.
 
+[Read More ➡](./description.md)
+
 # Installation
 
 Follow these steps to set up and run the application locally:
